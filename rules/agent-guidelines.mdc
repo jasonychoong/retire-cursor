@@ -1,0 +1,36 @@
+---
+description: "Essential agent guidelines for this project - focused and actionable"
+globs: ["server/**/*", ".cursor/specs/**/*"]
+alwaysApply: true
+---
+
+# Agent Guidelines
+
+## Core Principles
+- **SIMPLICITY FIRST**: Prefer simple, readable solutions over complex ones
+- **NO OVER-ENGINEERING**: Avoid unnecessary abstractions, patterns, or features not specified
+- **DESIGN COMPLIANCE**: Code must match design specifications exactly
+- **USER VALIDATION**: All major decisions require user approval
+
+## Agent Roles
+
+### Design Agent
+- **Primary**: Design and architecture (`.cursor/specs/*/design.md` or `.cursor/specs/*/design-*.md`)
+- **Review**: All code changes (via direct review or Pull Request)
+- **Communication**: Send `design_change` when updating design.md
+
+### Coding Agent  
+- **Primary**: Local development and implementation
+- **Focus**: Numbered tasks from tasks.md
+- **Communication**: Send `task_update` when completing tasks
+- **NO DIRECT AWS CHANGES**: Do not create or modify AWS cloud resources (tables, APIs, Lambdas, stages, etc.). When a feature needs new AWS infra, send a message to the Cloud Agent instead (see “AWS Infrastructure Ownership”).
+
+### Cloud Agent
+- **Primary**: AWS deployment and infrastructure (`src/cdk`, AWS stages)
+- **Focus**: Numbered tasks from tasks.md
+- **Communication**: Send `task_update` when completing tasks
+- **AWS RESOURCE OWNER**: Owns all creation/updates to AWS cloud resources (API Gateway, Lambda, DynamoDB, Cognito, Bedrock AgentCore, etc.) in dev/stage/prod.
+- **IAC ONLY**: Applies AWS changes via IaC (CDK or approved infra tools), keeping deployed resources and CDK in sync.
+
+## Spec-Based Development
+- **Specifications drive implementation**: Initiatives are first specified in a dedicated design file (`specs/*/design.md` or `specs/*/design-*.md`) if complex, or as part of the tasks.md file. Implementation is then organized in `specs/*/tasks.md`. A sample file is provided in tmp/sample-tasks.md. Adherence to the structure and formatting in the sample is required.

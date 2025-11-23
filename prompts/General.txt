@@ -1,0 +1,118 @@
+# Prompt Design Investigation Spike
+
+## Selecting a Framework
+
+I'm looking to execute on a spike to investigate prompt design for a chat interface between a user and an LLM for a retirement planning application. The prompt design is intended to do the following: 1/ guide the conversation between the user and the LLM to cover a number of different financial planning topics important for retirement, 2/ provide a means to gather financial data from the customer in order to ensure that key datasets needed for effective financial planning can be put together, and 3/ provide recommendations to customers on how to proceed with their financial planning journey.
+
+While this spike is intended to explore prompt designs, the plan is that we are also laying the groundwork to develop the infrastructure pieces for a production version of this application.
+
+First, I'd like to get your assessment on my proposed tech stack for the production application, and from that target end state, work backwards to establish what the tech stack should be for this spike investigation, given the desire to lay the ground work towards the production version. To provide you with some context on this before you can make your assessment, the cloud infrastructure that I'm looking to use is AWS for general cloud services such as database (DynamoDB), container (ECS/ECR), authN/Z (Cognito), and serverless (Lambda). Given this, Amazon Bedrock AgentCore is likely the right service to use to deploy, manage, run, and persist the AI agents. 
+
+Given the focus on prompt design explorations for the spike, we could roll our own prompt engineering code, or we could potentially use an open source framework to provide prompt management. Options for the latter include LangChain, and LlamaIndex, as more established and mature frameworks. However, given the AWS infrastructure focus, and the tight coupling between Bedrock AgentCore, and Strands Agent, I'd like your perspective on whether a newer framework like Strands Agent adds unnecessary risk, or given the longer term desire to lay the groundwork for production in an AWS environment, the case for Strands Agent is stronger. I also hear that LangChain is a pretty complex framework to use as well.
+
+You should ask me any questions you might have to help you to provide a well informed recommendations.
+
+## Answers to Questions
+
+1. My plan is to have all the code written by AI Coding Agents. So, any language is feasible. However, I'm biased towards staying with Python for its heavy support in the GenAI domain, and my somewhat greater recent use of Python. I'd be looking to have the AI Coding Agents deploy with CDK.
+
+2. The LLM is likely to NOT be Bedrock-based. I believe that Strands Agent + AgentCore does not limit use to Bedrock-provided models. At this stage, I'm tilting towards OpenAI and/or Gemini models as providing the best cost/performance ratios, but want the flexibility to support other models as the GenAI race continues.
+
+3. There's likely to be multi-agent, and tool-rich workflows over time. To start with, the spike investigation with start relatively simple, but the tech stack needs to be able to evolve with the application.
+
+4. There will be some auditing capabilities, but it's not clear that how much regulatory and compliance requirements will be needed.
+
+5. I am actually familiar with the Strands Agent framework already. But, again, the AI Coding Agents will be writing most (if not all) of the code.
+
+6. Having the flexibility to support A/B and offline testing, and tracings/metrics is useful, but it's unclear how much will be needed.
+
+7. This will initially be fore small internal pilots. But as noted earlier, the goal is to lay the groundwork for scaled use by retail users. This is likely a web experience only.
+
+## Designing the Prototype - a chat tool
+
+Okay, let's do the following. Let's get started with Strands Agent for this Spike Investigation. Here's how I'd like us to progress this investigation. Here's some framing discussion. First, you're a Design Agent. You will be focused on architecture and design, and helping me document designs and tasks for Coding Agent(s) to develop software. 
+
+1. Purpose. I'd like us to build a prototype to explore how we might design prompts for this chat interface in order experiement and try out different prompt designs, models, and tools. Some of the key things we're going to investigate are:
+    1a. How to design System Messages to facilitate our goals below.
+    1b. How to provide a guided chat experience for the user to better understand their financial planning journey. A part of this exercise is to direct the LLM to guide the user through a number of key aspects of the financial planning process.
+    1c. How to extract key personalized financial details from the user that will allow us to build a picture of their personal situation, and help (i) to further guide their chat experience, (ii) drive recommendations on how the user can further learn or seek advice on their personlized needs, and (iii) provide the user with their own data organized in a structure way, despite the original chat experience being relatively unstructured.
+    1d. How different models respond.
+    1e. How the tools interface can be used.
+2. Environment. To get started, we'll develop an interactive CLI experience that runs in the local environment. This interactive chat CLI experience will imitate what they'll experience say, in a browser chatbox. However, we should separate the chat experience from the AI agent code, as the latter will ultimately end up in the cloud, while the former evolves in a web-based experience.
+    2a. The interactive CLI experience will be developed as a Python script, implemented as an executable (chmod a+x with shebang), `server/tools/chat` (file to be created, folders already created). Ideally, only one file is needed.
+    2b. The AI agent code to be placed in `server/chat/` folder. Written in Python, any number of files may be developed to implement desired functionality. Use Strands Agent CDK for the prompt framework. The chat tool shall import appropriate artifacts from the `server/chat/` folder.
+3. Spec-Based Development.
+    3a. To get us started, you will need to first create a design file in .cursor/specs/prompt-design/design.md. This file will be read by an AI Coding Agent to implement the code.
+    3b. Once a sufficiently well design has been a completed, you will then proceed to create the .cursor/specs/prompt-design/tasks.md file to define the numbered tasks, and ensure work is sequenced according to dependencies.
+4. Models
+    4a. Support models from OpenAI (gpt-5.1, gpt-5.1-mini), and Gemini (gemini-2.5, gemini-2.5-flash)
+    4b. Create a `server/tools/.chat/config.yaml` file to determine which model to Use
+    4c. CLI will also provide an option `--model <model>` to allow manual single execution selection of model, where `<model>` is one of the model codes mentioned in 4a.
+5. CLI chat behavior
+    5a. The CLI can be executed in two modes - an interactive chat experience (default), and a single-turn chat (when called with `--single`).
+    5b. Interactive chat. In an interactive experience, the CLI will provide a user input, followed by streaming assistant response. If it's relatively straightforward to implement this in the terminal as a prompt area that doesn't move, with an area showing historical user and assistant content, in the way LLM chat experiences are implemented, that's the desired experience. If a CLI in the terminal does not afford such an experience, other experiences can be considered. Please outline options available.
+    5c. Single-turn chat. When called with a `--single` option, a single turn is executed.
+    5d. Sessions. One of the goals is to allow states to be preserved across CLI calls. As an example, it must be possible to run an interactive chat conversation with the chat tool, terminate that interactive chat conversation with a control-D, run a single-turn chat with the CLI with a different system prompt for one turn, then run an interactive chat with the CLI with the original (or perhaps different) system prompt. At any stage of calling the CLI, other parameters can be changed (eg., using a different LLM model). This set of exchanges can all be done with in a single "session", where a session is defined as a single chat conversation, with the history of previous turns being persisted (locally in the `server/tools/.chat/` folder), and then added to.
+        5d(i). Sessions are identified by a UUIDv4.
+        5d(ii). An environment variable in the terminal where the chat tool is launched, RETIRE_CURRENT_SESSION_ID, is used to track the current session.
+        5d(iv). When first called, the chat tool will check if a RETIRE_CURRENT_SESSION_ID exists and has been populated with an id? If not, then this will be interpreted as a new chat session, a new UUIDv4 is generated, and the RETIRE_CURRENT_SESSION_ID is assigned that new UUIDv4.
+        5d(v). The persisted history will be made against this UUIDv4.
+        5d(vi). All chats within an interactive or a single-turn chat will be made in this session.
+        5d(vii). A new session can be created by invoking the chat tool with a `--new-session` option, which will cause a new session to be created with a new UUIDv4, and the RETIRE_CURRENT_SESSION_ID will be assigned this new session id.
+        5d(viii). An existing session can be switched to by calling the chat tool with a `--session=<UUID>` option. A `--switch` option can be provided to clearly describe a switch of sessions, but it is optional and default (if other options such as `--description` is not provided - see below).
+        5d(ix). All past sessions can be listed by calling the chat tool with a `--list-sessions` option. This shall list a table, in a human friendly format, sessions UUID, when it was created, whether it is the current session, and a description.
+        5d(x). Session descriptions can be provided by calling the chat tool with a `--description="<description-text>" option, which requires the `--session=<UUID>` option to also be provided. When `--description` is also provided, the session will not be switched.
+        5d(xi). Upon completion of the single-turn chat or normal termination of the interactive chat with control-D, the session UUID will be printed.
+    5e. Conversation Manager. For a v1, we will only support the `SlidingWindowConversationManager`, which should be viewed as the default choice. In the future, we will add support for `SummarizingConversationManager` and/or `SemanticSummarizingConversationManager` invoked via CLI options.
+        5e(i). A default `window_size` of 20 will be set in the local.yaml file, with the CLI option to override it with a `--window-size=#` option
+        5e(ii). A default `should_truncate_results` of True will be set in the local.yaml file, with the CLI option to override it with a `--should-truncate-results=False`
+6. System Prompt
+    6a. System prompt may be provided with a `--system-prompt-file <filename>` where `<filename>` is a relative or absolute path to a text file containing the system prompt.
+    6b. An alternative way to provide the system prompt is to provide it directly in the CLI with a `--system-prompt="<system-prompt>"`.
+    6c. Once provided, that system prompt is used for all future chats (interactive or single-turn) until a new system prompt is provided with the `--system-prompt-file` or `--system-prompt` option.
+    6d. System prompts may change between chat CLI calls.
+7. Tool Support
+    7a. Tools shall be supported by registering Python files and functions.
+    7b. A tool registry shall be created in the `server/tools/.chat` folder. The registry will contain filenames (relative from project base folder or absolute).
+    7c. System prompts can refer to any tool made available through the tool registry.
+    7d. The onus is on the tool creator to ensure that tools have the correct structure, including the docstring that allows Strands Agent SDK to provide tool properties to the LLM.
+    7e. Standard Strands Agent handling of missing tools (runtime error) or missing docstring (blind tool) applies.
+
+Given this as a starting definition of a chat tool prototype, I'd like you to ask me at least 5 questions to further help flush out the details of this prototype. Again, your goal here is to understand enough so that you can write a design spec (`design.md` file).
+
+### Responses to your focused questions
+
+1. Let's start with JSON file per session. And do separate history and metadata. But in a design, note that a shift towards SQLite as a potential next step if concurrency and querying becomes important for the prototype. The long-term production persistence will be quite different (AgentCore Memory + DynamoDB).
+2. Yes, store model name, system prompt file (if file was used), tool calls + arguments, and results, and latency, tokens used, and latency.
+3. Yes, record configuration changes made with the session metadata.
+4. Here's how to look at configuration.
+    4a. First, the precedence for the initial CLI execution of the chat tool for a new session.
+        4a(i). The tool requires a config.yaml that contains all the expected variables. The absence of config.yaml, or missing variables in the config.yaml should cause the tool to throw an error, citing the missing variable. The variables in config.yaml should be considered the default. 
+        4a(ii). CLI flags serve as an override. If provided, CLI flags take precedence over config.yaml variables. This rule applies to the initial CLI execution of the chat tool. 
+    4b. Once the configuration has been applied to that session, that configuration remains for all chats on that session, unless it is changed by subsequent CLI calls (with options that change the configuration) for that same session.
+5. Use the a single model string to completely represent the model (eg., gpt-5.1, gemini-2.5-flash). There is no need to represent the provider anywhere in the configuration or CLI options/parameters. 
+6. Definitely open to using a TUI. If given the choice, I'd lean towards textual as the more modern approach.
+7. Token-by-token
+8. There should only be one tool registry across all sessions. That said, if the tool registry is modified while a session is active, any system prompts that directs the LLM to use a new tool will be allowed. We will not be tracking tool registry changes in the session.
+9. A simple list of Python module paths is sufficient.
+10. No safety guardrails right now. 
+11. Raw text is sufficient right now.
+12. Only allow one way to provide the system prompt. If both are provided, throw an error.
+13. Assume a small enough list for now.
+14. Yes, provide a `--delete-session` option. Treat this as a real delete, and delete all the data associated with that session.
+15. Send logs to a file under .chat/. Quiet on stdout unless --verbose provided, in which case, provide debug logs to stdout.
+16. Unit tests required with all test files to be placed in server/tests/ folder. 
+
+If you have any further questions, please ask me before starting work on design.md. Otherwise, proceed to draft design.md. I will review it upon completion.
+
+### design.md review
+
+1. Throughout the design.md document, the folder for the chat agent package should be `server/agents/chat`, rather than `server/chat/`. Please correct this throughout the document. This also applies to the Python module path mentioned in Section 7.1, which seems to be referring to this folder structure as well, although I think we'd want to put the tools under its own folder, rather than under chat (ie., "server.chat.tools.calculators.retirement_savings" should be changed to "server.agents.tools.calculators.retirement_savings", etc.)
+2. In Section 3.2, the example does not clear identify that this CLI call is being initiated with a NEW session. A new session occurs if the RETIRE_CURRENT_SESSION_ID does not exist or is empty, or a --new-session option is provided. Since it's not clear in this example whether a new session is being started, the first two bullets under point 2 may not be executed - ie., if this is an existing session, then we do not load `config.yaml` (and hence, do not need to validate that all required fields are needed). So, either make it clear that step 1 is a new session (in which case, explain the conditions for it being consider a new session), or make the first two bullets of step 2 conditional on whether step 1 was for a new or an existing session.
+3. In Section 4.2, for `sessions/<session_id>/history.json`, and for the "system" prompt entry, how were you envisaging that this is provided. Presumably, the first entry should have a `role: "system"`. Thereafter, does a `role: "system"` then only appear if there is a change in the system prompt (despite the system prompt being sent on every interaction with the LLM, but would be redundant to log unless there's a change)?
+4. In Section 4.2, for `sessions/<session_id>/metadata.json`, under "System prompt metadata` bullet, what if the system prompt is changed during the session? I'm assuming that the intent here is that we are storing the "current" session configuration parameters, and as mentioned in my point 3, changes in system prompt is "logged" as part of the `history.json`, while `metadata.json` stores the current session configuration. That said, the "Per-turn telemetry and configuration changes" suggest a temporal store of changes, so where does system prompt changes also go here (instead of the `history.json` file, or does it go into both since it's both metadata and message)?
+5. Add --help or -h option to the CLI to provide a list of all commands/options available, and example usage.
+6. The design.md file seems to suggest that integration with a real LLM is not required. While it's acceptable for development and unit testing to mock an LLM, we need to deliver a working chat tool with support for at least say gpt-5.1-mini for a first end-to-end integration.
+
+Given this feedback, let me know if you have any questions or would like to discuss specific topics further. Also, for next steps, I'd like to get your perspective on whether we need to be more prescriptive on how the Coding Agent executes on the spike. In the tmp/sample-tasks.md file, I provide a sample of parts of a tasks.md file that I've used to create a task structure and enforce sequencing based on dependency. Should we create such a document, or should we leave it to the Coding Agent to figure this out themselves. Be aware that I'm planning to use gpt-5.1-codex for the Coding Agent model, which is a pretty capable model.
+
