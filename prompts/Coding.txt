@@ -1,0 +1,74 @@
+# Onboarding - prompt-design spec
+
+You are a Coding Agent. You will be focused on implementing code as specified in design and task documentation.
+
+Your first project is specified in the .cursor/specs/prompt-design/ folder. You should review the design.md file documented in this folder. Following your review of the design file, you should then look at Task 1 of .cursor/specs/prompt-design/tasks.md, which provides you with the first task for you to implement.
+
+Before you start implementing, I'd like you to ask me at least 5 questions you might have about the requirements for the chat tool, the design, or your first task.
+
+## Responses to questions
+
+1. session_store.py should be stored in the server/tools/ area, but in a new folder server/tools/lib/
+2. We should create a standard config.yaml, which can be modified by the user. Section 8.1 of the design.md file provides the standard values.
+3. `tabulate1 is fine.
+4. Temporary directory under tmp/ is fine.
+5. Empty files upon session creation.
+
+If you have any further questions, please ask. Otherwise, proceed to implement.
+
+### Housekeeping
+
+In the server/ folder, you should create a new git repo, to track all the code you've created in the server/ folder. Then commit the code you've made so far. After that, I'd like you set up a remote with `git remote set-url origin git@github-jasonychoong:jasonychoong/retire-server.git`, and then push.
+
+## Task 2
+
+Okay, please proceed to review Task 2 of .cursor/specs/prompt-design/tasks.md, which you will be implementing next. Please ask me at least one question to help you clarify your understanding of this taks.
+
+### Answer to question
+
+1. Preferred provider client library: openai>=1.42.0, google-genai>=1.52.0
+2. Environment variable names: OPENAI_API_KEY, GOOGLE_AI_API_KEY
+
+Unless you have any further questions, please proceed to implement Task 2.
+
+## Task 3
+
+Okay, please proceed to review Task 3 of .cursor/specs/prompt-design/tasks.md, which you will be implementing next. Please ask me at least one question to help you clarify your understanding of this taks.
+
+## Task 4
+
+Okay, please proceed to review Task 4 of .cursor/specs/prompt-design/tasks.md, which you will be implementing next. Please ask me at least one question to help you clarify your understanding of this taks.
+
+### Answer to question
+
+Let's keep it flat for now. If you have any further questions, please ask now before starting implementation. Otherwise, proceed to implement task 4.
+
+### New Task 4.3
+
+We have a new subtask, Task 4.3, added to to tasks.md. Please implement this subtask as documented. If you have any questions about it, please ask before you start implementing.
+
+## Task 5
+
+Okay, please proceed to review Task 5 of .cursor/specs/prompt-design/tasks.md, which you will be implementing next. Please ask me at least one question to help you clarify your understanding of this taks.
+
+Design Agent has revised the requirements for Task 5.1. Please re-read it and use this revised design (which now calls for us of prompt_toolkit instead of the more complex Textual library). Implement Task 5.1 ONLY first (and wait to hear from me about task 5.2). Upon completion, DO NOT commit code. I'd like to examine the results to see whether the use of prompt_toolkit is of sufficient value. If not, I will be asking you to revert the code changes. 
+
+1. Yes, when I run the `printf` statement, I get blue text.
+2. The prompt doesn't actually appear in the TextArea above. And when the assistant finishes their response, the user prompt does not appear properly (no "You > "), and the caret just appears at the of the assistant text, rather than on a new line.
+3. Page up/down, arrow up/down doesn't do anything.
+
+I've attached the tui logs.
+
+Okay, this is not working out. Please revert all code changes back to the last commit. Then read Task 5.1 from the tasks.md file again. It has been revised. Please let me know if you have any questions.
+
+Here's what I'm seeing.
+1. For the user prompt, what I get is "You> " being shown in green, but when I, as the user types the text, I get white text (rather than green).
+2. When the response from the model comes back, it comes back in white first. Then there's an identical response preambled by "Assistant: " that's in blue. The former white response needs to be removed.
+
+Go ahead and commit the changes for Task 5.1. Once you've done that, please proceed to implement Task 5.2.
+
+>>>> Defer - potentially wait until the TUI is put in place
+
+### Minor adjustments
+
+* In the multi-turn interaction, when the assistant content is printed, please add an "Assistant> " prefix in a similar way there is a "You> " prompt for user input.

@@ -116,3 +116,59 @@ If you have any further questions, please ask me before starting work on design.
 
 Given this feedback, let me know if you have any questions or would like to discuss specific topics further. Also, for next steps, I'd like to get your perspective on whether we need to be more prescriptive on how the Coding Agent executes on the spike. In the tmp/sample-tasks.md file, I provide a sample of parts of a tasks.md file that I've used to create a task structure and enforce sequencing based on dependency. Should we create such a document, or should we leave it to the Coding Agent to figure this out themselves. Be aware that I'm planning to use gpt-5.1-codex for the Coding Agent model, which is a pretty capable model.
 
+### tasks.md review
+
+* I noticed that you've got all unit tests at the end in Task 7.1. Should there be some unit tests earlier, potentially with each major functional block, rather than waiting until towards the end?
+* At what point in this process can I begin trying out the implementation? I'm guessing on completion of Task 3.3, when there is support for at least the single-turn control flow? At what point should you get involved? My desired process is that the Design Agent should at least do a code review, and it's typically done upon completion of major tasks and/or as part of a PR. But earlier code reviews can ensure deviations from design are caught earlier as well.
+
+## Housekeeping
+
+Okay, I'd like you to create a git repo for us to store and track specs and other administrative documents. Please create a git repo in the .cursor folder. Then go ahead and commit the .cursor folder and all its subfolders, including teh specs folder that contains the design.md and tasks.md files. I've created a remote for you to be able to push this repo to - https://github.com/jasonychoong/retire-cursor.git. Please go ahead and add this as the remote, and after you have committed, please push it.
+
+## Task 1 review
+
+Coding Agent has completed Task 1. Please review code changes in the server/ folder and let me know if there are any concerns with what's been implemented so far.
+
+## Task 2 review
+
+Coding Agent has completed Task 2. Please review code changes in the server/ folder and let me know if there are any concerns with what's been implemented so far. Also, let me know what I can manually test following the new capabilities introduced in Task 2.
+
+### Follow up
+
+Go ahead and create an explicit follow-up subtask 2.4 that makes it clear to the Coding Agent that they need to use the real Strands Agent. Then provide me with the text that I need to give to the Coding Agent to ensure that they implement this new subtask.
+
+Coding Agent has completed subtask 2.4. Please take a look at the changes, and confirm that they had implemented 2.4 as you specified, and raise any concerns you might have.
+
+## Task 3 review
+
+Coding Agent has completed Task 3. Please review code changes in the server/ folder and let me know if there are any concerns with what's been implemented so far. Also, let me know what I can manually test following the new capabilities introduced in Task 3. Also, Coding Agent reference activating a venv. I assume it's the on in the project base folder (.venv/bin/activate)?
+
+## Task 4 review
+
+First, Coding Agent has completed implementing Task 4 and committed changes. Please review code changes in the server/ folder and let me know if there are any concerns with what's been implemented so far.
+
+Second, I had a new Agent, the Prompt Agent create a system prompt in server/tools/.chat/system-prompts/readiness.txt, largely to test out a system prompt that can be used to trigger the tool. When I look at the history logs, server/tools/.chat/sessions/2f461a12-6a03-4e52-b25e-1732b5cdc197/history.json, I think the tool was not invoked. Can you help me figure out what's going on here? Was the tool invoked, or not, and if not, why.
+
+### Add tool logging and creating a second tool
+
+Can you add the following as a new task 4.3 to be implemented by the Coding Agent, and a prompt for me to provide to the Coding Agent to work on 4.3?
+
+Tool Logging and Summary. Include tool use logs in both the metadata.json and the history.json files. 
+
+I also had a question about the metadata.json data structure. In server/tools/.chat/sessions/2f461a12-6a03-4e52-b25e-1732b5cdc197/metadata.json, it appears as if the structure is a single JSON object that contains a "config" parameters (with model, window_size, should_truncate_results settings), "system_prompt_text" and other "system_prompt*" fields, and an array of "turns". If any of the config parameters or system_prompt* values are changed, is a new JSON object created with all these parameters (including the changed one), and all subsequent turns placed within this new object? But do the messages sent to the LLM include turns from the previous JSON object's turns, or are we resetting the turns history (ie., turns in the previous JSON object are not included). The main thing I'm trying to establish is whether 1/ this JSON object structure makes sense, and 2/ the context history is reflective of this structure (in which case every change in config or system_prompt result in a reset of context history, which is not what we want), or whether the JSON object structure in the metadata.json file is not reflective of the message context history.
+
+Discuss only for now and don't take action yet. Give me your feedback on the metadata.json data structure first.
+
+Okay, proceed to add Task 4.3 to the tasks.md document.
+
+## Task 5 adjustment
+
+Here's what I'd like to do. Adjust Task 5.1 plan in tasks.md to use prompt_toolkit. As part of this, have all user inputs be printed in green, LLM/asistance content be printed blue, tool content be yellow, and any other outputs, grey.
+
+I've had several rounds with Coding Agent trying to get the prompt_toolkit to work, but it doesn't seem to render properly. I'm not sure if it's because the Coding Agent isn't able to make it work, or the prompt_toolkit isn't well suited to this task. What are our options? We could explore Textual, or perhaps just revert to standard stdout/stdin interactions. Having colored text based on who's sending the message would still be sufficient. Having a TUI isn't a priority. Thoughts?
+
+Go ahead and update Task 5.1, and give me instructions to provide to the Coding Agent. 
+
+>>>> Defer
+
+2. Tool to Estimate Area Coverage. 

@@ -211,7 +211,7 @@ Design note: The design should clearly separate **session history** and **metada
     - Print a clear error message indicating which keys are missing.
 
 - **Required keys** (initial set, can be extended in this design):
-  - `model`: string (e.g., `gpt-5.1`, `gpt-5.1-mini`, `gemini-2.5`, `gemini-2.5-flash`).
+  - `model`: string (e.g., `gpt-5.1`, `gpt-5.1-mini`, `gemini-2.5-pro`, `gemini-2.5-flash`).
   - `window_size`: integer (default 20).
   - `should_truncate_results`: boolean (default `true`).
   - Any additional values needed by the Strands configuration (e.g., API keys may be read from environment rather than config).
@@ -240,11 +240,11 @@ For **existing sessions**:
 
 #### 5.3 Model Identification
 
-- A single **model string** is used to represent both provider and model ID (e.g., `gpt-5.1`, `gpt-5.1-mini`, `gemini-2.5`, `gemini-2.5-flash`).
+- A single **model string** is used to represent both provider and model ID (e.g., `gpt-5.1`, `gpt-5.1-mini`, `gemini-2.5-pro`, `gemini-2.5-flash`).
 - The design should specify a mapping layer in `server/agents/chat/` that:
   - Maps the model string to:
     - Provider (OpenAI vs Gemini).
-    - Concrete API model ID used by the underlying client library.
+    - Concrete Strands model configuration (model class and `model_id`) used by the underlying Strands SDK.
   - This mapping should be centralized so new models can be added by editing a single configuration/location.
 
 ---

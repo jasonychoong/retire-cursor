@@ -18,7 +18,7 @@ Objective: Establish the local persistence layer and configuration mechanics nee
 
 ### 1.1 Session Storage Layout and Index
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 22, 2025, 9:52PM), **Kicked Off** (Nov 14, 2025, 9:00PM)
 - Lead: Coding Agent
 - Scope:
   - Implement the on-disk layout under `server/tools/.chat/`:
@@ -44,7 +44,8 @@ Objective: Establish the local persistence layer and configuration mechanics nee
 
 ### 1.2 Config File Handling and Validation
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 22, 2025, 9:52PM), **Kicked Off** (Nov 14, 2025, 9:00PM)
+(Nov 14, 2025, 9:00PM)
 - Lead: Coding Agent
 - Scope:
   - Define the expected schema for `server/tools/.chat/config.yaml` consistent with `design.md` §5.1, including:
@@ -75,7 +76,7 @@ Objective: Implement the Strands-based chat agent layer that the CLI will invoke
 
 ### 2.1 Model Mapping and Provider Integration
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 6:22AM)
 - Lead: Coding Agent
 - Scope:
   - Implement a **model registry/mapping** in `server/agents/chat` that:
@@ -93,7 +94,7 @@ Objective: Implement the Strands-based chat agent layer that the CLI will invoke
 
 ### 2.2 Conversation Manager and Strands Agent Construction
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 6:22AM)
 - Lead: Coding Agent
 - Scope:
   - Implement a helper in `server/agents/chat` that:
@@ -113,7 +114,7 @@ Objective: Implement the Strands-based chat agent layer that the CLI will invoke
 
 ### 2.3 System Prompt Persistence and Telemetry
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 6:22AM)
 - Lead: Coding Agent
 - Scope:
   - Implement logic for handling system prompts in accordance with `design.md` §6 and §4.2:
@@ -135,6 +136,26 @@ Objective: Implement the Strands-based chat agent layer that the CLI will invoke
     - Proper history and metadata updates when the system prompt changes.
 - Dependencies: 1.1, 1.2.
 
+### 2.4 Replace ChatAgent Façade with Real Strands Agent
+
+- [x] Status: **Completed** (Nov 23, 2025, 7:13AM)
+- Lead: Coding Agent
+- Scope:
+  - Introduce the **actual Strands Agent SDK** into `server/agents/chat` and refactor the runtime to use a real `strands.Agent` instead of the temporary `ChatAgent` façade:
+    - Wire the `ModelClient` created in Task 2.1 into a Strands model configuration appropriate for the selected provider (OpenAI or Gemini).
+    - Construct a Strands `Agent` instance that:
+      - Uses the `SlidingWindowConversationManager` behavior from Task 2.2 (either by wrapping Strands’ own conversation manager or aligning its configuration).
+      - Accepts the current effective system prompt and tools list (from Task 4.2) as per Strands’ documented APIs.
+  - Update the agent-construction helper(s) in `server/agents/chat/runtime.py` (or equivalent) so:
+    - The Coding Agent-facing API (`build_agent` / `build_conversation_manager`) now returns a thin wrapper around a real Strands `Agent`, not a custom stand-in.
+    - Any temporary/ad-hoc `ChatAgent` class is either removed or clearly demoted to a testing helper with a TODO comment.
+  - Ensure that public interfaces used by the CLI (Tasks 3.x) remain stable (or are updated in lockstep) so later tasks can call into the Strands-backed agent without further design changes.
+- Deliverables:
+  - Strands SDK imported and used explicitly for agent construction.
+  - Updated runtime code using a real `strands.Agent` implementation.
+  - Unit tests adjusted or extended to validate basic agent construction and payload wiring using Strands abstractions (can rely on mocks/fakes for the underlying SDK).
+- Dependencies: 2.1, 2.2, 2.3, 4.2.
+
 ---
 
 ## Task 3: CLI Core Behavior (Sessions, Modes, and Help)
@@ -143,7 +164,7 @@ Objective: Implement the main CLI entrypoint (`server/tools/chat`) and core beha
 
 ### 3.1 CLI Entry Script and Argument Parsing
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 2:30PM)
 - Lead: Coding Agent
 - Scope:
   - Implement `server/tools/chat` as an executable Python script (shebang + `chmod a+x`).
@@ -167,7 +188,7 @@ Objective: Implement the main CLI entrypoint (`server/tools/chat`) and core beha
 
 ### 3.2 Session Resolution and Lifecycle in CLI
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 2:30PM)
 - Lead: Coding Agent
 - Scope:
   - Implement session resolution logic in the CLI as described in `design.md` §3.2 and §4.1:
@@ -190,7 +211,7 @@ Objective: Implement the main CLI entrypoint (`server/tools/chat`) and core beha
 
 ### 3.3 Interactive and Single-Turn Control Flow (Non-TUI)
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 2:30PM)
 - Lead: Coding Agent
 - Scope:
   - Implement the business logic for:
@@ -220,7 +241,7 @@ Objective: Implement the tool registry and wire tools into the Strands Agent so 
 
 ### 4.1 Tool Registry File and Loader
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 7:26PM)
 - Lead: Coding Agent
 - Scope:
   - Design and implement a tool registry file under `server/tools/.chat/` (e.g., `tools.yaml` or `tools.json`):
@@ -240,7 +261,7 @@ Objective: Implement the tool registry and wire tools into the Strands Agent so 
 
 ### 4.2 Tool Integration with Strands Agent
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 23, 2025, 7:26PM)
 - Lead: Coding Agent
 - Scope:
   - Integrate the tool loader from Task 4.1 into the agent construction function (Task 2.2):
@@ -252,34 +273,54 @@ Objective: Implement the tool registry and wire tools into the Strands Agent so 
   - Unit/integration tests verifying that a tool can be invoked by the model (can use a mock model that always calls a known tool).
 - Dependencies: 2.2, 4.1.
 
+### 4.3 Tool Usage Logging and Summary
+
+- [x] Status: **Completed** (Nov 24, 2025, 7:31AM)
+- Lead: Coding Agent
+- Scope:
+  - Extend the existing metadata and history logging so that **tool usage is explicitly recorded**:
+    - In `metadata.json`:
+      - For each turn where the agent invokes one or more tools, append tool usage details into the relevant entry in the `turns` array (e.g., `tools_used: [{name, arguments, result_summary}]`).
+      - Ensure that this information is stored alongside the existing `timestamp`, `user`, `assistant`, `stop_reason`, and `usage` fields.
+    - In `history.json`:
+      - Add synthetic entries (or augment existing assistant entries) so it is obvious when a tool was called and what its high-level output was, without overwhelming the log (e.g., a `role: "tool"` or annotated assistant content line).
+  - Implement this by inspecting Strands’ result object for tool call traces (or by adding lightweight logging inside tool functions if necessary), keeping the logging structure simple and stable.
+  - Ensure that logging works for the existing `retirement_readiness` tool and will naturally support additional tools added later.
+- Deliverables:
+  - Clear, structured evidence of tool usage in both `metadata.json` and `history.json` for turns where tools are invoked.
+  - Unit tests and/or focused integration tests that:
+    - Simulate a tool call and assert that tool usage appears in the per-turn metadata.
+    - Confirm that the history log includes an indication that a tool was used and what it returned at a high level.
+- Dependencies: 3.3, 4.1, 4.2.
+
 ---
 
 ## Task 5: TUI and Streaming UX Enhancements
 
 Objective: Enhance the CLI experience to more closely resemble a chat UI, including scrollable history and token-level streaming.
 
-### 5.1 TUI Implementation (Textual or Alternative)
+### 5.1 Colored Stdout Rendering (Non-TUI)
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 25, 2025, 6:12AM)
 - Lead: Coding Agent
 - Scope:
-  - Implement a richer TUI for interactive sessions, preferably using **Textual**:
-    - Scrollable area for prior user/assistant/system messages.
-    - Fixed input field at the bottom for entering user messages.
-    - Live updating of the assistant’s current response as tokens stream in.
-  - If Textual proves too heavy or problematic:
-    - Implement a simpler fallback using `prompt_toolkit` or raw ANSI control codes.
-    - Document the chosen approach in a brief comment or note.
-  - Ensure that TUI remains optional/fallback-friendly:
-    - If TUI cannot be initialized (e.g., non-TTY environment), revert gracefully to the basic stdout behavior implemented in Task 3.3.
+  - Enhance the existing interactive and single-turn flows using **standard stdin/stdout only** (no additional TUI framework):
+    - Keep the current input loop structure from Task 3.3.
+    - Apply a simple, consistent **ANSI color scheme** when printing messages:
+      - User input lines (echoed back or shown in the transcript): **green**.
+      - LLM/assistant content: **blue**.
+      - Tool-related summaries or outputs (e.g., high-level `retirement_readiness` results): **yellow**.
+      - Operational/log-style output (e.g., verbose diagnostics, non-chat messages): **grey**.
+    - Ensure colors degrade gracefully when ANSI color is not supported (e.g., allow a “no color” mode or detect non-TTY).
+  - Do not introduce prompt_toolkit or Textual for this spike; focus on readable, colorized console output rather than a full TUI.
 - Deliverables:
-  - Interactive chat UI within the terminal that feels closer to a browser chatbox experience.
-  - Manual testing instructions or small examples to exercise the TUI.
+  - Interactive and single-turn chat flows that use colorized stdout to distinguish user/assistant/tool/other output, without relying on external TUI libraries.
+  - Manual testing instructions or small examples to exercise the colorized output.
 - Dependencies: 3.3.
 
 ### 5.2 Token-Level Streaming Integration
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 25, 2025, 8:25AM)
 - Lead: Coding Agent
 - Scope:
   - Ensure that both the basic CLI flow and the TUI use **token-by-token streaming** (or the closest approximation supported by the model APIs).

@@ -1,0 +1,68 @@
+# Onboarding - prompt-design spec
+
+You are a Design Agent. You will be focused on designing prompts for our project. First, I'd like you to review the file, .cursor/specs/prompt-design/design.md.
+
+For your first task, I'd like you to design a system prompt to have the LLM guide the user to answering questions that allows the LLM to provide the information needed to determine how ready the user is to retire. The tool you're looking to have the model call is defined in server/agents/tools/retirement.py, and specifically, is the `retirement_readiness` function, where the parameters that the model will be providing to the tool is described in the docstring for the function. The system prompt is to be placed in server/tools/.chat/system-prompts/readiness.txt. The LLM should only guide the conversation with the user in this direction only if the user has expressed interest in understanding when they should retire and/or how ready they are to retire. Once that occurs, then the LLM should ask the necessary questions to pass ALL parameters needed by the tool. Only when all the necessary data is available should the LLM invoke the tool.
+
+First, ask me at least two questions you might have to ensure you better understand the overall purpose of this prototype, and/or the goals of the overarching product, and/or requirements that affect this prompt design.
+
+## Answers to your questions
+
+1. The overarching product purpose is that the LLM is acting as a "retirement consultant". The scope of their coaching is any aspect of retirement, which may include retirement readiness, financial planning, tax planning, debt, estate planning, and any number of different retirement-related issues. This specific focus on "retirement readiness" is really an attempt to test how the LLM can guide the conversation towards invoke the tool, as part of early prototyping. We will be introducing other tools over time, and the prompt will then be expanded to support the invocation of other tools as well.
+
+2. For now, we're only introducing enough in the system prompt to let the model know that they're a "retirement consultant", and if the user is interested in the topic of retirement readiness, the necessary data needed to run the tool should be obtained from the user so that the tool can be invoked, and its response provided to the user.
+
+3. The target audience are US-based mid-to-late career workers near retirement, in any industry.
+
+Let me know if you have any other questions. If not, please proceed to construct the system prompt.
+
+# Data Completeness
+
+I'd like you to now design a new prompt and a corresponding tool to support this prompt. The goal is to have the model interact with the user to obtain and store essential information needed to furnish a plan for retirement.
+
+First, a quick definition of what "essential information" means. Essential information is categories of information that can affect how retirement planning and execution works. In tmp/Essential Topics.md, I have pulled together a 8 topics, and within them, critical sub-topics that cover some of the most important topics for the user to consider. Not all such topics are important for every user.
+
+What I'd like you to do is to 
+1/ design a system prompt, server/tools/.chat/system-prompts/completeness.txt, that is similar to the readiness.txt system prompt that you had previously designed (same persona for the model, same target audience), except instaed of steering the user towards the "retirement readiness" tool, the goal is to cover a breadth of topics described in the "Essential Topics" described in the "Essential Topics.md" file. 
+    1a/ Topics. The model need not cover every single topic in depth, but should instead explore with the user, what topics are important to them, and for topics that are important, dive deeper to ensure that the user understands the issues relating to those topics of importance to them. 
+    1b/ Information. Whenever the model obtains new information about the user's circumstances, goals, or needs for any of the topics, call a new "information" tool (defined later), and provide the new information to be persisted, identifying which topic(s) they apply to.
+    1c/ Completeness. Following every 3-5 new information tool invocation, the model should also invoke a "information-query" tool, that provides all the persisted information, to then allow the model to make an assessment of how complete information gathering has been for the user in each of the topics, on a 0-100 scale.
+2/ design a tool, called "information", that would be invoked by the model with a `role: "tool"` response from the model, that includes, as parameters, which topic, and which subtopic (if applicable), that new information has been obtained for the user, and to persist this data. This tool is to be placed in the server/agents/tools folder, as "information.py", and invoked through interactions through the server/tools/chat CLI.
+3/ design a tool, called "information-query", that would be invoked by the model with a `role: "tool"` response from the model. This tool will fetch all persisted information stored by the "information" tool. This tool is to be placed in the server/agents/tools folder, as "information-query.py", and invoked through interactions through the server/tools/chat CLI.
+4/ design a tool, called "completeness", that would that would be invoked by the model with a `role: "tool"` response from the model, that includes, as parameters, for each topic, the model's assessment of completeness, and to persist this completeness data. This tool is to be placed in the server/agents/tools folder, as "completeness.py", and invoked through interactions through the server/tools/chat CLI.
+
+The system prompt is something you can directly design and place in the server/tools/.chat/system-prompts folder. The tools themselves will be implemented by the coding agent. What you will need to do is to specify the tools in a new file, .cursor/specs/prompt-design/design-completeness-tools.md. You should use the structure and format of the .cursor/specs/prompt-design/design.md to help you articulate the design of these tools.
+
+Before you get started, I'd like you to ask me at least 5 questions on this Data Completeness design.
+
+## Answers to clarifying questions
+
+1. This is an early prototype. We should pick a simple persistence approach that allows for easy writing, appending, and fetching of the data. I'm happy to explore options, but I was thinking that a jsonl file would suffice for this. I think storing this information in server/tools/.chat/sessions/<session-id> would work.
+
+2. The topic should be strict enums. The subtopics could be free-form, to provide flexibility to the model.
+
+3. A more structured payload will be important, but still leave the model to have some freedom of the content within the structure. In your example, the typs of facts in `fact_type` could be determined by the model, but capturing timestamp, and confidence is something we want to prescribe.
+
+4. The basis for updating updating completeness scoring is when there is material changes to completeness. As a conceptual guideline, I'd say that we need to update completeness with every 10 score improvement across any of the topics, or every 3 or so information updates. We should parameterize this threshold, and once we've had some examples of how quickly score improvement changes, we can then tune these threshold parameters.
+
+5. I think we'll want some level of flexibility to allow the model to decide when the check in. But as I mentioned in 4, the goal is to tune this as we explore this further.
+
+6. Let's not include the completeness score in the chat response to the user. The overarching design intent here is that the completeness scoe is presented through a different non-chat interface (a completeness chart, some other clickable experience showing the user what information has already been gathered). For this prototype, we will be able to see tool calls in the CLI, so we'll be able to observe the model's tool actions.
+
+I suspect there's still some clarification needed, so please ask me at least another question to help you understand this better.
+
+7. Everything to stay within the session. No cross-session support needed right now for the prototype.
+
+If you don't any other questions, please proceed to design the system prompt, and then create the .cursor/specs/prompt-design/design-completeness-tools.md document to provide the Coding Agent guidance on the completeness tools they need to implement.
+
+## Review of designs
+
+completeness.txt
+* In the second paragraph, starting with "Only steer the conversation...", I would strengthen the "data completeness" flow by having the model ALWAYS evaluate "data completeness". However, we do not want to force the user to cover any specific topic, nor the depth of exploration in any specific topic. What we'd want to do with this particular flow is to capture information that users want to provide, and the completeness of information along any (or all) of the eight topic areas. You should look through other text in the system to adjust the prompt according to this guidance (eg., in the third paragraph, starting with "When the user is interested...", you should instead state that this is the goal of this flow, ie., to explore what the user's retirement plan should encompass).
+* In the system prompt, there's a reference to "Essential Topics". This is a reference to a file that the LLM does not have access to. That said, we'll use a reasonably well capable LLM that may already understand these concepts if we provide enough information about what the topic covers. The question is whether we should include some (or all) of the information in the tmp/Essential Topics.md file in the system prompt, or whether we should provide a bit more details in the system prompt, but ultimately, rely on the LLM's trained knowledge of each of these topics. In either event, we should not use the term "Essential Topics" as this reference does not make sense in the system prompt without the corresponding file. 
+
+I'd like to get your feedback, especially for the second bullet point. One thing I'm not clear on is whether we can/should reliably assume that the model will cover critical sub-topics. For instance, "Social Security Claiming Strategy" can be quite significant when it comes to Cash Flow. Can we rely on the model to explore this topic with the user, or should we place a greater emphasis on it, while still allowing the model some latitude to explore other sub-topics?
+
+
+
+
