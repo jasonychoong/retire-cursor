@@ -67,6 +67,48 @@ Here's what I'm seeing.
 
 Go ahead and commit the changes for Task 5.1. Once you've done that, please proceed to implement Task 5.2.
 
+### Housekeeping
+
+I think we're good for Task 5. Please go ahead and commit and push the server/ folder.
+
+# completeness-tools spec kick off
+
+Let's take a pause on the current prompt infrastructure. I'd like you to do the following:
+
+1. Review the new design spec, .cursor/specs/prompt-design/design-completeness-tools.md.
+2. Review the new task spec, .cursor/specs/prompt-design/tasks-completeness-tools.md, for Task 1 ONLY.
+3. Create a branch in the server/ folder called, `completeness-tools`. All code changes in server/ for all tasks described in the .cursor/specs/prompt-design/tasks-completeness-tools.md file will be committed onto this branch.
+
+Then, ask me at least three questions about the design spec, and/or Task 1 from the task spec to help you better understand the ask.
+
+## Answers to questions
+
+1. Let's just omit it for now until we find a use case for it.
+2. Help me understand how the `SessionStore` abstraction is structured and is instantiated. My sense is the new helpers could end up being general purpose extensions to the `SessionStore` abstraction. What I don't know is whether we extend the existng `SessionStore` abstraction with new methods, or whether we should create new subclasses of `SessionSstore` for this kind of use case. Perhaps you can provide me with more details so that we can collaboratively figure out how to implement these helpers.
+3. Simple file appends is fine. This is for a prototype which will be called one at a time. 
+
+Let's iterate on question 2, but if you have any other new questions, or have follow-ups on 1 and 3, please raise them.
+
+## Housekeeping and task 2
+
+I think we're good with what you've implemented for Task 1. Please go ahead and commit into the `completeness-tools` branch. Then push. Then I'd like you to review Task 2. After this review, please ask me at least 2 questions to help you understand the ask in Task 2.
+
+### Answers to clarifying questions
+1. Yes, infer the session ID from the same environment/context that the CLI uses.
+2. Have information_query return the records in raw append/chronological order with no extra sorting/filtering.
+Unless you have any other questions, please proceed to implement.
+
+## Housekeeping and task 3
+
+I think we're good with what you've implemented for Task 2. Please go ahead and commit into the `completeness-tools` branch. Then push. Then I'd like you to review Task 3. After this review, please ask me at least one question to help you understand the ask in Task 3.
+
+### Answers to question
+
+Manual test instructions is fine.
+
+### Questions during manual testing
+
+In server/tools/.chat/sessions/dc189f3b-7c9b-4f34-9577-eb7422de7f17/history.json, I have a "tool result was too large" error. I believe this means that we're hitting the Strands Agent limits right? Is this simply a case of the window_size being too small? If I was to change my window_size in the middle of an active session (by quitting the chat app, and launching it again with a new window_size), will subsequent tool calls work for the current session?
 >>>> Defer - potentially wait until the TUI is put in place
 
 ### Minor adjustments

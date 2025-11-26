@@ -63,6 +63,58 @@ completeness.txt
 
 I'd like to get your feedback, especially for the second bullet point. One thing I'm not clear on is whether we can/should reliably assume that the model will cover critical sub-topics. For instance, "Social Security Claiming Strategy" can be quite significant when it comes to Cash Flow. Can we rely on the model to explore this topic with the user, or should we place a greater emphasis on it, while still allowing the model some latitude to explore other sub-topics?
 
+## Housekeeping
 
+Please go ahead and commit and push ALL changes and untracked files of the following - the .cursor/, and the server/ folders.
 
+## tasks-completeness-tools.md
 
+I'd like you to create a new file, .cursor/specs/prompt-design/tasks-completeness-tools.md. It should mirror the structure and format of the tasks.md file in the same folder. The goal here is for you to document how you would like the Coding Agent to implement the tools you have just defined in .cursor/specs/prompt-design/design-completeness-tools.md. The Coding Agent will be asked to review the design document first, and then execute the implementation in the way you describe in the corresponding tasks document. This will give you some control over how the task is implemented, manage dependencies, and have checkpoints where you can review their work and request changes without waiting for all tasks to be completed before being able to review their work. I generally have a review with Design (which is your role for prompt work) at the completion of every major task number (eg., Task 1, Task 2, etc.).
+
+Before you get started, please ask me at least one question to clarify the process or to understand how to document tasks.
+
+### Response to clarifying questions
+
+The tasks will be read by the AI Coding Agent. If you think it's necessary to be more prescriptive and descriptive in defining details, then feel free to break the task down into smaller chunks of work. However, the AI Coding Agent is a very competent AI model (GPT-5.1-Codex), so it's unlikely that they'll need too much detail, unless you believe that there are nuances that need to be called out. The more important thing to do is to make sure that the major (numbered) tasks are clearly separated to give you (and I) the opportunity to do a review and suggest course corrections, in case the design document provided insufficient specificity.
+
+## Task 1 review
+
+Coding Agent has completed Task 1. They have not committed the code changes yet, so go ahead and have a look at the changed code to determine whether they have implemented to your spec for Task 1. 
+
+Let's get the Coding Agent to switch to typed dicts. Please give me the necessary prompt to send to the Coding Agent in a chat to have them rework Task 1 to support typed dicts.
+
+Please check the Coding Agent's latest revision (again, same files, not committed) to see if they've implemented typed dicts, consistent with the design spec.
+
+## Task 2 question
+
+Question from teh Coding Agent. "When information_query reads information.jsonl, should it return the raw records in chronological order as stored (append order), or do you want it to apply any sorting/filtering (e.g., most recent first, by topic) before handing them back to the LLM?"
+
+Does the order that we send the raw records to the LLM matter for the purpose of it doing its processing to determine completeness? Would the LLM be more effective if we've organized the data by topic, or by recency?
+
+## Task 2 review
+
+Coding Agent has completed Task 2. They have not committed the code changes yet, so go ahead and have a look at the changed code to determine whether they have implemented to your spec for Task 2. 
+
+## Task 3 review
+
+Coding Agent has completed Task 3. They have not committed the code changes yet, so go ahead and have a look at the changed code to determine whether they have implemented to your spec for Task 3. 
+
+## Feedback on prompt
+
+Question - don't action yet. Have a look at server/tools/.chat/sessions/dc189f3b-7c9b-4f34-9577-eb7422de7f17/history.json. After quite a number of turns focused on cash flow, I don't see a completeness tool invocation. Would you expect that after this many exchanges, completeness tool would have been called already, given the system prompt you provided? Discussion only for now.
+
+Now, have a look at the same file again. This time round, I've provided a bunch more information, and we're still not getting a completeness tool call. At what point do we conclude that the model is not going to call it, and the system prompt needs to be reworked. Discussion only - don't take any action yet.
+
+I'd like you to make changes so that the completeness call is made at least once on the first tool information call, and then on at least every 3 tool information calls thereafter. But don't commit the change. I'd like to see what happens in a new session.
+
+I see errors in the logs for the completeness tool calls. Can you have a look at server/tools/.chat/sessions/a28dbb73-7567-4fcf-a335-59fc699c9650/history.json to see whether this is due to how the model is calling the tool, or perhaps the tool itself has an issue.
+
+Okay, then please proceed to update the `completeness.txt` system prompt to ensure that the model calls the tool properly.
+
+A new run. This time, I'm see one failed completeness tool call, followed by two successful ones. Can you check server/tools/.chat/sessions/31805662-3844-4a3b-ade6-ecb084061427/history.json to see if the failed one requires any change in the system prompt?
+
+Check out the history logs, server/tools/.chat/sessions/31805662-3844-4a3b-ade6-ecb084061427/history.json, and the completeness data, server/tools/.chat/sessions/31805662-3844-4a3b-ade6-ecb084061427/completeness.jsonl. While much of our focus has been on cash flow, I have also started providing residency information (living in California, exploring options for living outside the country and NV). I also provided my property information (primary, second). These should theoretically cause some progress in completeness in "Housing & Geography" topic. Is it possible that the model became too focused on cash flow and is neglecting the information they're starting to collect in the other 7 topics? I can try explicitly asking questions in the other 7 topics next to see if that helps, or perhaps you can give me some specific user prompts to help test this?
+
+Have a look at the latest entry in server/tools/.chat/sessions/31805662-3844-4a3b-ade6-ecb084061427/completeness.jsonl. Here, the model adds a single entry into the completeness tool for just the "estate_planning", whereas, in previous entries, they provide a cumulative data of all topics they have information for. Could the reason for this be that the model will eventually lose context about prior topics? Should we ensure consistency in how completeness data is accumulated by not having the model be responsible for tracking other topics, and do the accumulation deterministically? Discussion only. Do not modify any files yet.
+
+Okay, in that case, I think we have a good enough working prototype. Please go ahead and commit and push the server/ folder (on the current branch `completeness-tools`), and the .cursor/ folder (on the main branch).
