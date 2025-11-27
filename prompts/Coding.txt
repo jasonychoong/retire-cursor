@@ -109,8 +109,23 @@ Manual test instructions is fine.
 ### Questions during manual testing
 
 In server/tools/.chat/sessions/dc189f3b-7c9b-4f34-9577-eb7422de7f17/history.json, I have a "tool result was too large" error. I believe this means that we're hitting the Strands Agent limits right? Is this simply a case of the window_size being too small? If I was to change my window_size in the middle of an active session (by quitting the chat app, and launching it again with a new window_size), will subsequent tool calls work for the current session?
->>>> Defer - potentially wait until the TUI is put in place
 
-### Minor adjustments
+Have a look at server/tools/.chat/sessions/dc189f3b-7c9b-4f34-9577-eb7422de7f17/history.json. I see some tool calls (information and information_query), but I do not see these tools being shown in the chat session (in yellow text). Can you investigate this? 
 
-* In the multi-turn interaction, when the assistant content is printed, please add an "Assistant> " prefix in a similar way there is a "You> " prompt for user input.
+This is command I called: `chat --new-session --system-prompt-file server/tools/.chat/system-prompts/completeness.txt --model gpt-5.1`. The venv I activated was in .venv/bin/activate (starting in project root). I did not see any yellow text lines for ANY of the tool calls.
+
+## Task 5 
+
+A new Task 5 has been added to .cursor/specs/prompt-design/tasks-completeness-tools.md. You should review it, along with the corresponding Section 10 of .cursor/specs/prompt-design/design-completeness-tools.md cited in Task 5. Then ask me at least 3 questions to help you fully understand the requirements of these two new read-only CLI tools.
+
+### Answers to questions
+
+1. Instructions on topic prompts have been added to Task 5.1, around lines 214-218.
+2. Use standard rounding. Do not display the `reason` text.
+3. Always provide what is obtained from the `fact_type` string (and capitalize the first letter).
+
+Let me know if you have any further questions. If not, please proceed to implement.
+
+## Housekeeping
+
+Okay, I think we're good with Task 5. Go ahead and commit the changes. Then merge the `completeness-tools` branch into the main branch. Then push.

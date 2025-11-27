@@ -104,7 +104,7 @@ Objective: Implement the `completeness` tool and wire all three tools into the e
 
 ### 3.1 Implement `completeness` Tool
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 26, 2025, 8:49AM)
 - Lead: Coding Agent
 - Scope:
   - Implement `server/agents/tools/completeness.py` as described in `design-completeness-tools.md` §7:
@@ -129,7 +129,7 @@ Objective: Implement the `completeness` tool and wire all three tools into the e
 
 ### 3.2 Tool Registry Wiring and Smoke Test
 
-- [ ] Status: **Not Started**
+- [x] Status: **Completed** (Nov 26, 2025, 8:49AM)
 - Lead: Coding Agent
 - Scope:
   - Register the three new tools (`information`, `information_query`, `completeness`) in the existing tool registry file (e.g., `server/tools/.chat/tools.yaml`) following the established pattern from Task 4 in the main `tasks.md`.
@@ -167,6 +167,95 @@ Objective: Incorporate feedback from the Design Agent and ensure the tools behav
   - Agreed-upon refinements merged, with notes (in comments or a short markdown changelog) documenting any intentional deviations from the original design.
   - Updated tests reflecting the final expected behavior.
 - Dependencies: 1–3.
+
+---
+
+## Task 5: Completeness and Profile Monitor CLIs
+
+Objective: Implement two read-only CLI tools (`server/tools/completeness` and `server/tools/profile`) that provide live views of completeness scores and captured user information for a given session, as described in `design-completeness-tools.md` §10.
+
+### 5.1 Implement `server/tools/completeness` Monitor
+
+- [x] Status: **Completed** (Nov 27, 2025, 8:28AM)
+- Lead: Coding Agent
+- Scope:
+  - Implement an executable CLI script `server/tools/completeness` that:
+    - Accepts an optional `--session <UUID>` argument.
+    - Resolves the target session as follows:
+      - If `--session` is provided, use that ID.
+      - Otherwise, load `server/tools/.chat/sessions/index.json` and pick the entry with `is_current: true` (the same “current” session that `chat --list-sessions` highlights).
+    - Enters a polling loop (e.g., every 2 seconds) that:
+      - Looks for `<chat_dir>/sessions/<session_id>/completeness.jsonl`.
+      - If the file is missing or contains no records:
+        - Clears the terminal (via ANSI) and prints `awaiting data...`.
+      - If records exist:
+        - Reads all entries, merges them to compute the **latest score per topic** (one canonical score per topic ID).
+        - Clears the screen and prints one line per canonical topic, in the fixed order:
+          1. `income_cash_flow`
+          2. `healthcare_medicare`
+          3. `housing_geography`
+          4. `tax_efficiency_rmds`
+          5. `longevity_inflation`
+          6. `long_term_care`
+          7. `lifestyle_purpose`
+          8. `estate_planning`
+        - Renders each line as a **text arrow** based on the score:
+          - A `|` character aligned across all lines.
+          - Then zero or more `=` characters plus a final `>` character, where each character (either `=` or `>`) represents **5 completeness points**.
+          - After the arrow (or just `|` if score is 0), prints a space and the numeric score.
+          - Example:
+            - `1. income_cash_flow     |================> 85`
+            - `2. healthcare_medicare  |========> 45`
+            - `3. housing_geography    |===========> 60`
+            - `4. tax_efficiency_rmds  | 0`
+            - ...
+      - After the topic lines, prints:
+        - `Help me explore a specific topic (enter number 1-8)> `
+      - If the user enters `1`–`8` and presses Enter:
+        - Looks up the corresponding canonical topic ID based on the number (1 → `income_cash_flow`, 2 → `healthcare_medicare`, etc.).
+        - Loads the JSON file `server/tools/.chat/user-prompts/explore-topic.json`, which maps topic IDs to **recommended user prompts**.
+        - Prints the mapped prompt text for that topic to stdout so the user can copy/paste it into `server/tools/chat`.
+        - Does **not** attempt to inject into an existing chat process or manage sessions beyond printing the suggestion.
+    - Continues polling and updating until terminated by the user with Ctrl-C or Ctrl-D.
+- Deliverables:
+  - A working `server/tools/completeness` CLI that:
+    - Correctly resolves the target session.
+    - Displays per-topic arrows with aligned formatting.
+    - Handles missing/empty `completeness.jsonl` with an `awaiting data...` message.
+    - Prints a topic-specific recommended prompt when the user selects a topic number.
+  - Basic tests (or a small manual test script/README section) describing how to run `chat` and `completeness` side by side and what to look for.
+- Dependencies: 1.1, 3.1–3.2, main `tasks.md` Task 1 (session store) and Task 3 (chat CLI/session management).
+
+### 5.2 Implement `server/tools/profile` Monitor
+
+- [x] Status: **Completed** (Nov 27, 2025, 8:28AM)
+- Lead: Coding Agent
+- Scope:
+  - Implement an executable CLI script `server/tools/profile` that:
+    - Accepts an optional `--session <UUID>` argument and resolves the target session using the same rules as `server/tools/completeness`.
+    - Enters a polling loop (e.g., every 2 seconds) that:
+      - Looks for `<chat_dir>/sessions/<session_id>/information.jsonl`.
+      - If the file is missing or contains no records:
+        - Clears the screen and prints `awaiting data...`.
+      - If records exist:
+        - Reads all entries, groups them by:
+          - `topic` (canonical ID) in a stable order,
+          - then `subtopic` (string), and
+          - chronological order within each subtopic.
+        - Clears the screen and renders a hierarchical view:
+          - Top-level: topic name (e.g., `income_cash_flow`).
+          - Second-level: subtopic (e.g., `retirement_timing`, `ages`, `spending`, `social_security`, `assets`, `asset_breakdown`).
+          - Third-level: indented bullet or prefixed line for each record, with a label based on `fact_type` or simple heuristics:
+            - e.g., `Goal: ...`, `Fact: ...`, `Preference: ...`.
+        - The formatting can follow the example given in the Prompt document (grouped and indented text), using monospaced indentation and stdout-only printing (no external TUI libraries).
+    - Continues running and refreshing until terminated by the user (Ctrl-C/D).
+- Deliverables:
+  - A working `server/tools/profile` CLI that:
+    - Resolves the target session.
+    - Correctly groups and displays information records by topic and subtopic.
+    - Handles empty/missing `information.jsonl` with an `awaiting data...` message.
+  - Basic tests or manual instructions demonstrating how to run `chat` and `profile` together and interpret the output.
+- Dependencies: 1.1, 2.1–2.2, main `tasks.md` Task 1 (session store) and Task 3 (chat CLI/session management).
 
 
 

@@ -274,4 +274,124 @@ The Coding Agent should provide unit tests that cover at least:
 
 These tests can be placed under the existing `server/tests/` structure, following the patterns established for other tools and persistence components.
 
+---
+
+### 10. CLI Monitors – Completeness and Profile Views
+
+In addition to the tools above, this design introduces two **read-only CLI utilities** that consume `information.jsonl` and `completeness.jsonl` to provide a live view of the user’s planning profile and topic completeness while a chat session is running.
+
+These tools are **not** required for the agent to function, but they are important for:
+
+- Demonstrating completeness behavior side-by-side with the chat.
+- Allowing users (and designers) to observe how information and completeness evolve over time.
+
+#### 10.1 Session Resolution for Monitors
+
+Both CLIs follow the same rules:
+
+- Default session:
+  - If `--session <UUID>` is **not** provided, they resolve the session to monitor using the session marked `is_current: true` in `server/tools/.chat/sessions/index.json` (i.e., the same “current” session that `chat --list-sessions` highlights).
+- Explicit session:
+  - If `--session <UUID>` is provided, they monitor the specified session ID regardless of `is_current`.
+- Environment:
+  - They **do not rely on** `RETIRE_CURRENT_SESSION_ID`; that variable remains an internal mechanism for the `chat` CLI.
+
+If the target session directory or JSONL files are missing or empty, the tools should display an “awaiting data…” message and continue polling.
+
+#### 10.2 `server/tools/completeness` – Live Topic Completeness Monitor
+
+Purpose:
+
+- Provide a **live, terminal-based visualization** of per-topic completeness scores for a single session, suitable for running alongside the chat CLI in a separate terminal window.
+- Optionally suggest a **pre-crafted prompt** for the user to copy/paste into the chat when they choose to explore a specific topic more deeply.
+
+Behavior:
+
+- Command-line interface (conceptual):
+  - `server/tools/completeness [--session <UUID>]`
+- Polling loop:
+  - Every ~2 seconds, examine the session’s `completeness.jsonl` (e.g., via mtime or by re-reading; exact mechanism up to Coding Agent).
+  - If the file does not exist or has no entries yet, clear the screen and print a simple message such as:
+    - `awaiting data...` (and continue polling).
+  - If entries exist:
+    - Read all snapshots and compute the **latest score per topic** by taking the most recent `score` for each topic across all entries.
+    - Clear the terminal using simple ANSI sequences (e.g., `\x1b[2J\x1b[H`).
+    - Render one line per canonical topic in a fixed order:
+      1. `income_cash_flow`
+      2. `healthcare_medicare`
+      3. `housing_geography`
+      4. `tax_efficiency_rmds`
+      5. `longevity_inflation`
+      6. `long_term_care`
+      7. `lifestyle_purpose`
+      8. `estate_planning`
+    - For each topic, display a **text arrow** whose length encodes the latest score:
+      - A `|` character aligned in a column across all lines.
+      - Followed by a run of `=` characters and a final `>` tip.
+      - Each character (either `=` or `>`) represents **5 points** of completeness.
+      - After the arrow, print a space and the numeric score.
+      - A score of 0 is displayed as `| 0` with no arrow body.
+    - Example layout (monospaced alignment implied):
+      - `1. income_cash_flow     |================> 85`
+      - `2. healthcare_medicare  |========> 45`
+      - `3. housing_geography    |===========> 60`
+      - `4. tax_efficiency_rmds  | 0`
+      - `5. longevity_inflation  | 0`
+      - `6. long_term_care       | 0`
+      - `7. lifestyle_purpose    | 0`
+      - `8. estate_planning      |=========> 50`
+- Topic exploration prompt:
+  - After the topic lines, print a prompt:
+    - `Help me explore a specific topic (enter number 1-8)> `
+  - If the user enters a number 1–8:
+    - The tool does **not** attempt to inject into a running chat process.
+    - Instead, it prints a **recommended user prompt string** tailored to that topic, which the user can copy/paste into their existing `server/tools/chat` terminal. The Design Agent will provide example phrasing per topic in a future prompt-design iteration.
+  - The monitor continues running; the user can continue to watch updates and optionally select topics again.
+- Exit:
+  - The process runs until the user terminates it with `Ctrl-C` or `Ctrl-D`; it does not exit automatically.
+
+#### 10.3 `server/tools/profile` – Live Information Profile Viewer
+
+Purpose:
+
+- Provide a **structured, continuously updating view** of all facts the agent has captured about the user, grouped by topic and subtopic, based on `information.jsonl`.
+
+Behavior:
+
+- Command-line interface (conceptual):
+  - `server/tools/profile [--session <UUID>]`
+- Polling loop:
+  - Every ~2 seconds, examine the session’s `information.jsonl`.
+  - If the file does not exist or has no entries yet, clear the screen and print `awaiting data...`, then continue polling.
+  - If entries exist:
+    - Read all records and group them by:
+      - `topic` (canonical ID),
+      - then `subtopic` (string or `None`),
+      - then chronological order of records within each subtopic.
+    - Clear the screen via ANSI codes.
+    - Render a hierarchical view similar to:
+      - `income_cash_flow`
+      - `    retirement_timing`
+      - `        Goal: User is considering retiring next year`
+      - `        Goal: User and spouse plan to stop working around May next year, with no work income afterward (conservative assumption).`
+      - `    ages`
+      - `        Fact: User is 64; spouse is 6 years younger (age 58).`
+      - `    spending`
+      - `        Goal: target retirement spending is about $100,000 per year (today's dollars).`
+      - `    social_security`
+      - `        Goal: User and spouse plan to claim Social Security at age 70 and expect to receive near-maximum benefits as high earners.`
+      - `    assets`
+      - `        Goal: User has about $2M in liquid/investable assets and about $2M net equity in property.`
+      - `    asset_breakdown`
+      - `        Fact: Liquid assets: ~$0.7M taxable, ~$1.2M in 401k/IRA, ~$100k in Roth. Property and debt details…`
+      - `housing_geography`
+      - `    future_moves`
+      - `        Goal: User plans to sell one rental property in about 2 years.`
+      - `healthcare_medicare`
+      - `    priority`
+      - `        Preference: User wants to focus on healthcare insurance options and cost implications given early retirement.`
+    - Label lines based on `fact_type` or the nature of the entry:
+      - For example: `Goal:`, `Fact:`, `Preference:` based on simple heuristics or the `fact_type` string.
+- Exit:
+  - As with the completeness monitor, the profile viewer runs until interrupted by the user; it does not exit automatically.
 

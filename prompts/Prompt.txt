@@ -118,3 +118,112 @@ Check out the history logs, server/tools/.chat/sessions/31805662-3844-4a3b-ade6-
 Have a look at the latest entry in server/tools/.chat/sessions/31805662-3844-4a3b-ade6-ecb084061427/completeness.jsonl. Here, the model adds a single entry into the completeness tool for just the "estate_planning", whereas, in previous entries, they provide a cumulative data of all topics they have information for. Could the reason for this be that the model will eventually lose context about prior topics? Should we ensure consistency in how completeness data is accumulated by not having the model be responsible for tracking other topics, and do the accumulation deterministically? Discussion only. Do not modify any files yet.
 
 Okay, in that case, I think we have a good enough working prototype. Please go ahead and commit and push the server/ folder (on the current branch `completeness-tools`), and the .cursor/ folder (on the main branch).
+
+## Task 4.1
+
+Okay, let's proceed on Task 4.1. Throughout the development of tasks 1-3, I've had you review what's been implemented. Given Task 4.1 is about reviewing the work done on Tasks 1-3, do you have views on what else we need to implement to complete the efforts of Tasks 1-3?
+
+I have some request for new capabilities that overlap somewhat with some of the refinements you list. Have a read of them, and we can A/ add these as new tasks (eg., Tasks 5), B/ add these as additions to the existing design, and then subsequently, add these as new tasks, or C/ embed this within Task 4.1 (likely modifying Task 4.1).
+
+1. Create a CLI tool, server/tools/completeness, that displays the current completeness data. This tool should 
+    1a. provide a display that fetches the latest data from the completeness.jsonl file of the current session (if not optional --session is not provided), or a specific session (if the optional --session SESSION is provided where SESSION is the session id).
+    1b. the completeness.jsonl is examined every two seconds for changes (potentially by looking at the update timestamp) and if there are changes, the latest data is fetched
+    1c. for each of update, the terminal screeen is cleared, and then the new data is presented
+    1d. the data is presented in the following way:
+        * for each of the 8 topics, listed in a fixed and unchanging order the latest score is presented using a text arrow after the name of the topic, where which character represents 5 points on the scores
+        * as examples, the following shows "income_cash_flow" with score 85 (16 `=` plus 1 `>` totalling 17 characters or 85 points), and so forth, and with the `|` representing the start of the arrow, and with all `|` symbols aligned for every line representing a topic, and after the `>` symbol, a space followed by the number representing the score, and scores of zero is represented by `| 0`:
+            1. income_cash_flow     |================> 85
+            2. healthcare_medicare  |========> 45
+            3. housing_geography    |===========> 60
+            4. tax_efficiency_rmds  | 0
+            5. longevity_inflation  | 0
+            6. long_term_care       | 0
+            7. lifestyle_design     | 0
+            8. estate_planning      |=========> 50
+    1e. and after the last topic line, provide a prompt to the user to enter a number to explore more deeply on a specific topic,
+        * where the prompt to the user is provided in the following form:
+            Help me explore a specific topic (enter number 1-8)> 
+        * where if the user does enter a number (1-8 only), causes an active chat tool (server/tools/chat) to send a message on behalf of the user the request that the LLM help them explore more deeply on a specific topic (and you, the Prompt Design Agent should recommend an appropriate user prompt to achieve this)
+    1f. where the chat-completeness tool is terminated with a ctrl-D or ctrl-C
+2. Create a CLI tool, server/tools/profile, that displays the accumulated information about the user. This tool should
+    2a. provide a display that fetches the latest data from the information.jsonl file of the current session (if not optional --session is not provided), or a specific session (if the optional --session SESSION is provided where SESSION is the session id).
+    2b. the information.jsonl is examined every two seconds for changes (potentially by looking at the update timestamp) and if there are changes, the latest data is fetched
+    2c. for each of update, the terminal screeen is cleared, and then the new data is presented
+    2d. the data is presented in the following way:
+        * for each topic, display information gathered about the user grouped by topic, then subtopic, then each entry in chronological order 
+        * as examples, from the first few entries of server/tools/.chat/sessions/31805662-3844-4a3b-ade6-ecb084061427/information.jsonl, we get the following:
+            income_cash_flow 
+                retirement_timing
+                    Goal: User is considering retiring next year
+                    Goal: User and spouse plan to stop working around May next year, with no work income afterward (conservative assumption).
+                ages
+                    Fact: User is 54; spouse is 6 years younger (age 48).
+                spending
+                    Goal: target retirement spending is about $200,000 per year (today's dollars).
+                social_security
+                    Goal: User and spouse plan to claim Social Security at age 70 and expect to receive near-maximum benefits as high earners (based on today's benefit levels).
+                assets
+                    Goal: User has about $4M in liquid/investable assets and about $4M net equity in property.
+                asset_breakdown
+                    Fact: Liquid assets: ~$1.5M taxable, ~$2.3M in 401k/IRA, ~$200k in Roth. Property: primary home ~$2.5M with $700k debt, second home ~$1.3M with $900k debt, two rentals ~$900k each with no debt. Rental income ignored for now.
+            housing_geography
+                future_moves
+                    Goal: User plans to sell one rental property in about 2 years, and sell the current primary residence and move into the second home in about 7 years.
+            healthcare_medicare
+                priority
+                    Preference: User wants to focus on healthcare insurance options and cost implications given early retirement at 54/48 with significant assets.
+I'm not sure whether 1e is possible (ie., having two different CLI scripts send event signals to each other), but let's discuss what is possible.
+
+Have described what I'm looking for, I'd like you to ask me at least three questions to clarify the requirements for these new tools.
+
+### Answers to Clarifying Questions.
+
+1. I'm envisaging a demonstration in the IDE, where there are three windows, each running separate terminals, where one terminal runs the existing chat tool, another the new completeness tool, and the third, the new profile tool. In the case of 1e, the chat tool is running, providing an interactive conversation with the LLM. Ideally, the completeness tool somehow causes the chat tool to send the message as the user on the already running chat tool. That's why I was asking whether it's possible for the completeness tool to send an event or signal to an already running chat tool, with all tools being CLI tools, invoked in separate terminals.
+
+2. I'm not sure I understand the RETIRE_CURRENT_SESSION_ID vs. index.json vs. is_current flag. There seems to be too many ways to specify what the current session id is. As a user, I'm only familiar with the session that the `chat --list-sessions` marks as the current session. That's the one we should be focused on. Please explain all the other methods, and we should discuss whether we need three of them.
+
+3. The tools should not automatically exit. A ctrl-C/D is needed to terminate the tools. If completeness.jsonl/information.jsonl files do not exist, or do exist but contain no data, then we should show "awaiting data..." message and keep polling.
+
+4. Let's start with the simple ANSI clear screen and monospaced alignment for now. As mentioned in 1 above, each tool will be running in a separate terminal. 
+
+Please respond to my questions above, and if you have follow-up or new questions, please ask me. Also, do you have an opinion on whether these are small enough to simply be added as additional tasks?
+
+### Continued Discussion
+
+1. Okay, let's keep things simple and have the completeness tool print a recommended prompt for the user to copy/paste into the chat terminal.
+
+2. Okay, go with your recommendation.
+
+3. I assume you're not proposing to use TUI. When we tried getting a TUI (prompt_toolkit) to work, the Coding Agent struggled to make it behave, in part I suspect, because they're not able to observe what was being generated, and after several iterations of explaining what I was seeing, they still weren't able to resolve the issue. I assume that you're proposing to do this somehow with a stdout/stdin approach? 
+
+4. Okay.
+
+5. Okay, go ahead and update the design doc, and add Task 5.
+
+Unless you have further questions, please proceed to document these requirements as you suggest in 5.
+
+### Coding Agent Question
+
+Here's a question from the Coding Agent:
+
+'Topic prompts: Task 5.1 says the completeness monitor should print a “recommended user prompt” for whichever topic number the user selects, but the design spec notes the phrasing will come from the Design Agent in a “future iteration.” Do you already have the exact copy for each of the 8 topics, or should I draft provisional text (to be reviewed later)?'
+
+Can you create a JSON file, server/tools/.chat/user-prompts/explore-topic.json, which is simply a JSON file containing pairs of topic names (eg., `income_cash_flow`, `healthcare_medicare`, etc.), and corresponding "recommended user prompt", that the Coding Agent can include as text to copy verbatime?
+
+Then, add to Task 5.1, under the bullet referenced by Coding Agent, an explanation of where to find these "recommended user prompt" and a brief explanation of how to look up the user prompt from the topic names.
+
+# Gemini Prompt
+
+Using the attached screenshot, I'd like you to create a sample web UI experience for a retirement chat app. The app has three panels - the left as shown, is a "chat" interface, with the LLM's completion response to a prior user prompt shown in blue, and the user's prompt (currently empty) shown in green at the bottom. Use the text being shown to populate this chat panel. The user prompt should be provided in a small text area at the bottom of this chat panel, and above it, is the history of the chat interaction between the user and the LLM, with both user and LLM interactions being shown.
+
+The top-right panel is a "completeness" interface, which in the screenshot, shows how complete an understanding the LLM has of the user's retirement situation across 8 different topics. This should be rendered as 8 different circular gauge charts, drawn to show how close to 100% completeness. Any amounts under 40% should be shown in red, 40-80% (inclusive) shown in yellow, and 80-100% shown in green. The center of each of these gauges should be the topic itself, and actual percentage value shown below the topic in a slightly bigger font. The eight circles should be laid out in a circular, around a center text, called "Completness".
+
+The bottom-right panel is a organized log of everything the LLM has uncovered about the user's situation in retirement. Show this in a table organized by topic (eg., `housing_geography`, then topic, eg., `current_home`, then the individual facts or goals).
+
+There should be an overarching web page name at the top. Call it "RetireGPT".
+
+Before you render this web UI experience, ask me at least 3 questions to help you better understand how to render such a a web page.
+
+## Housekeeping
+
+Okay, I think we're good with Task 5. Go ahead and commit all changes in the .cursor folder, and push.
